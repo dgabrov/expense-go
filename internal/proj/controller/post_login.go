@@ -8,7 +8,7 @@ import (
 )
 
 type Login interface {
-	PostLogin() http.HandlerFunc
+	http.Handler
 }
 
 type loginController struct {
@@ -20,8 +20,12 @@ func NewLogin(db *sql.DB, cfg data.ConfigData) Login {
 	return &loginController{db: db, cfg: cfg}
 }
 
-func (c *loginController) PostLogin() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
-	}
+func (c *loginController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	payload, err := c.process(r)
+
+	writeJsonResponse(w, payload, err)
+}
+
+func (c *loginController) process(r *http.Request) (*data.LoggedUser, error) {
+	return nil, nil
 }
