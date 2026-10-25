@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dgabrov/expense-go/internal/data"
 )
@@ -33,6 +34,15 @@ func (s *Server) MarkSessionExpired(ctx context.Context, token string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE session SET expired_ind = 'Y' WHERE token = ?`, token)
 	if err != nil {
 		return fmt.Errorf("marking session expired: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) ExtendSession(ctx context.Context, token string, expiryDt time.Time) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE session SET expiry_dt = ? WHERE token = ?`, expiryDt, token)
+	if err != nil {
+		return fmt.Errorf("extending session: %w", err)
 	}
 
 	return nil

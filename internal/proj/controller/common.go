@@ -53,7 +53,7 @@ func createRandomToken() string {
 	return fmt.Sprintf("%s%s", u7.String(), hex.EncodeToString(randomBytes))[:64]
 }
 
-func checkLogged(r *http.Request, srv *server.Server) error {
+func checkLogged(r *http.Request, srv *server.Server, cfg data.ConfigData) error {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		return fmt.Errorf("not logged in: %w", err)
@@ -71,9 +71,10 @@ func checkLogged(r *http.Request, srv *server.Server) error {
 		return errors.New("session expired")
 	}
 
-	if !session.ExpiryDt.After(time.Now().UTC()) {
+	now := time.Now().UTC()
+	if !session.ExpiryDt.After(now) {
 		return errors.New("session expired")
 	}
 
-	return nil
+	return srv.ExtendSession(r.Context(), session.Token, now.Add(time.Duration(cfg.TokenTTLSeconds)*time.Second))
 }
