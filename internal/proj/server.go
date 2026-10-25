@@ -17,7 +17,11 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux := http.NewServeMux()
 	context := cfg.Context
 
-	mux.HandleFunc("GET "+context+"/{$}", controller.GetRoot)
+	root := controller.NewRoot(db, cfg)
+	login := controller.NewLogin(db, cfg)
+
+	mux.HandleFunc("GET "+context+"/{$}", root.GetRoot())
+	mux.HandleFunc("POST "+context+"/login", login.PostLogin())
 
 	return mux
 }
