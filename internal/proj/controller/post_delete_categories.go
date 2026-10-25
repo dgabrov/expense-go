@@ -29,11 +29,10 @@ func (c *deleteCategoriesController) ServeHTTP(w http.ResponseWriter, r *http.Re
 }
 
 func (c *deleteCategoriesController) process(r *http.Request) error {
-	var ids []string
-	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+	var holder data.IdsHolder
+	if err := json.NewDecoder(r.Body).Decode(&holder); err != nil {
 		return fmt.Errorf("parsing delete categories request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.DeleteCategories(r.Context(), holder.Ids)
 }

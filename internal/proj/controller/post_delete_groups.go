@@ -29,11 +29,10 @@ func (c *deleteGroupsController) ServeHTTP(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *deleteGroupsController) process(r *http.Request) error {
-	var ids []string
-	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+	var holder data.IdsHolder
+	if err := json.NewDecoder(r.Body).Decode(&holder); err != nil {
 		return fmt.Errorf("parsing delete groups request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.DeleteGroups(r.Context(), holder.Ids)
 }

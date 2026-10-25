@@ -285,6 +285,78 @@ func indToBool(value string) bool {
 	return strings.EqualFold(value, "Y")
 }
 
+func (s *Server) CreateTransaction(ctx context.Context, transaction data.Transaction) error {
+	_, err := s.db.ExecContext(ctx,
+		"INSERT INTO `transaction` (transaction_id, name, transaction_date, amount, account_id, category_id) VALUES (?, ?, ?, ?, ?, ?)",
+		transaction.Id, transaction.Name, transaction.Date, transaction.Amount, transaction.AccountId, transaction.CategoryId)
+	if err != nil {
+		return fmt.Errorf("inserting transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) DeleteAccounts(ctx context.Context, ids []string) error {
+	return s.deleteByIds(ctx, "account", "account_id", "accounts", ids)
+}
+
+func (s *Server) DeleteGroups(ctx context.Context, ids []string) error {
+	return s.deleteByIds(ctx, "expense_group", "group_id", "groups", ids)
+}
+
+func (s *Server) DeleteCategories(ctx context.Context, ids []string) error {
+	return s.deleteByIds(ctx, "expense_category", "category_id", "categories", ids)
+}
+
+func (s *Server) DeleteTransactions(ctx context.Context, ids []string) error {
+	return s.deleteByIds(ctx, "`transaction`", "transaction_id", "transactions", ids)
+}
+
+// deleteByIds deletes the rows whose column matches any of ids. It fails and
+// deletes nothing when some ids do not exist. plural names the entities in errors.
+func (s *Server) deleteByIds(ctx context.Context, table, column, plural string, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(ids))
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			args = append(args, id)
+		}
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting delete of %s: %w", plural, err)
+	}
+	defer tx.Rollback()
+
+	placeholders := strings.TrimSuffix(strings.Repeat("?, ", len(args)), ", ")
+	result, err := tx.ExecContext(ctx,
+		fmt.Sprintf("DELETE FROM %s WHERE %s IN (%s)", table, column, placeholders), args...)
+	if err != nil {
+		return fmt.Errorf("deleting %s: %w", plural, err)
+	}
+
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("reading deleted %s: %w", plural, err)
+	}
+
+	if deleted != int64(len(args)) {
+		return fmt.Errorf("only %d of %d %s exist; nothing was deleted", deleted, len(args), plural)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing delete of %s: %w", plural, err)
+	}
+
+	return nil
+}
+
 // GetSessionByToken returns nil, nil when no session has the given token.
 func (s *Server) GetSessionByToken(ctx context.Context, token string) (*data.Session, error) {
 	var session data.Session

@@ -21,3 +21,7 @@ type ServerConfig struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`
 }
+
+type IdsHolder struct {
+	Ids []string `json:"ids"`
+}

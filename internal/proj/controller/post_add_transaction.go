@@ -34,6 +34,5 @@ func (c *addTransactionController) process(r *http.Request) error {
 		return fmt.Errorf("parsing add transaction request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.CreateTransaction(r.Context(), transaction)
 }

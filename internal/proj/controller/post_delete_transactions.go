@@ -29,11 +29,10 @@ func (c *deleteTransactionsController) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (c *deleteTransactionsController) process(r *http.Request) error {
-	var ids []string
-	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
+	var holder data.IdsHolder
+	if err := json.NewDecoder(r.Body).Decode(&holder); err != nil {
 		return fmt.Errorf("parsing delete transactions request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.DeleteTransactions(r.Context(), holder.Ids)
 }
