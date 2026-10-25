@@ -34,6 +34,5 @@ func (c *updateAccountController) process(r *http.Request) error {
 		return fmt.Errorf("parsing update account request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.UpdateAccount(r.Context(), account)
 }

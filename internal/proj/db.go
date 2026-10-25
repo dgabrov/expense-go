@@ -20,6 +20,7 @@ func openDB(cfg data.DatabaseConfig) (*sql.DB, error) {
 	dsn.Addr = fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	dsn.DBName = cfg.Name
 	dsn.ParseTime = true
+	dsn.ClientFoundRows = true
 
 	connector, err := mysql.NewConnector(dsn)
 	if err != nil {

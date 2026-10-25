@@ -82,6 +82,64 @@ func (s *Server) CreateCategory(ctx context.Context, category data.Category) err
 	return nil
 }
 
+func (s *Server) UpdateAccount(ctx context.Context, account data.Account) error {
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE account SET account_name = ?, cash = ? WHERE account_id = ?`,
+		account.Name, boolToInd(account.Cash), account.Id)
+	if err != nil {
+		return fmt.Errorf("updating account: %w", err)
+	}
+
+	return checkUpdated(result, "account", account.Id)
+}
+
+func (s *Server) UpdateGroup(ctx context.Context, group data.Group) error {
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE expense_group SET group_name = ? WHERE group_id = ?`,
+		group.Name, group.Id)
+	if err != nil {
+		return fmt.Errorf("updating group: %w", err)
+	}
+
+	return checkUpdated(result, "group", group.Id)
+}
+
+func (s *Server) UpdateCategory(ctx context.Context, category data.Category) error {
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE expense_category SET group_id = ?, category_name = ? WHERE category_id = ?`,
+		category.GroupId, category.Name, category.Id)
+	if err != nil {
+		return fmt.Errorf("updating category: %w", err)
+	}
+
+	return checkUpdated(result, "category", category.Id)
+}
+
+func (s *Server) UpdateTransaction(ctx context.Context, transaction data.Transaction) error {
+	result, err := s.db.ExecContext(ctx,
+		"UPDATE `transaction` SET name = ?, transaction_date = ?, amount = ?, account_id = ?, category_id = ? WHERE transaction_id = ?",
+		transaction.Name, transaction.Date, transaction.Amount, transaction.AccountId, transaction.CategoryId, transaction.Id)
+	if err != nil {
+		return fmt.Errorf("updating transaction: %w", err)
+	}
+
+	return checkUpdated(result, "transaction", transaction.Id)
+}
+
+// checkUpdated returns an error when an UPDATE matched no row for the given id.
+func checkUpdated(result sql.Result, entity string, id string) error {
+	matched, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("reading updated rows for %s: %w", entity, err)
+	}
+
+	if matched == 0 {
+		return fmt.Errorf("%s %s not found", entity, id)
+	}
+
+	return nil
+}
+
 // boolToInd maps a bool to the Y/N convention used by *ind columns.
 func boolToInd(value bool) string {
 	if value {

@@ -34,6 +34,5 @@ func (c *updateTransactionController) process(r *http.Request) error {
 		return fmt.Errorf("parsing update transaction request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.UpdateTransaction(r.Context(), transaction)
 }

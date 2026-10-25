@@ -34,6 +34,5 @@ func (c *updateCategoryController) process(r *http.Request) error {
 		return fmt.Errorf("parsing update category request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.UpdateCategory(r.Context(), category)
 }

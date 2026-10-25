@@ -34,6 +34,5 @@ func (c *updateGroupController) process(r *http.Request) error {
 		return fmt.Errorf("parsing update group request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.UpdateGroup(r.Context(), group)
 }
