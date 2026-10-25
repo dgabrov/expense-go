@@ -13,7 +13,7 @@ type AuthLoginResponse struct {
 }
 
 type LoggedUser struct {
-	Id    string
-	Login string
-	Name  string
+	Id    string `json:"id"`
+	Login string `json:"login"`
+	Name  string `json:"name"`
 }

@@ -18,11 +18,30 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux := http.NewServeMux()
 	context := cfg.Context
 
-	root := controller.NewRoot(db, cfg)
-	login := controller.NewLogin(server.NewServer(db, &cfg), cfg)
+	srv := server.NewServer(db, &cfg)
 
-	mux.Handle("GET "+context+"/{$}", root)
-	mux.Handle("POST "+context+"/login", login)
+	mux.Handle("GET "+context+"/{$}", controller.NewRoot(db, cfg))
+	mux.Handle("POST "+context+"/login", controller.NewLogin(srv, cfg))
+	mux.Handle("POST "+context+"/version", controller.NewVersion(srv, cfg))
+	mux.Handle("POST "+context+"/getAccounts", controller.NewGetAccounts(srv, cfg))
+	mux.Handle("POST "+context+"/addAccount", controller.NewAddAccount(srv, cfg))
+	mux.Handle("POST "+context+"/updateAccount", controller.NewUpdateAccount(srv, cfg))
+	mux.Handle("POST "+context+"/deleteAccounts", controller.NewDeleteAccounts(srv, cfg))
+	mux.Handle("POST "+context+"/getGroups", controller.NewGetGroups(srv, cfg))
+	mux.Handle("POST "+context+"/addGroup", controller.NewAddGroup(srv, cfg))
+	mux.Handle("POST "+context+"/updateGroup", controller.NewUpdateGroup(srv, cfg))
+	mux.Handle("POST "+context+"/deleteGroups", controller.NewDeleteGroups(srv, cfg))
+	mux.Handle("POST "+context+"/getCategories", controller.NewGetCategories(srv, cfg))
+	mux.Handle("POST "+context+"/addCategory", controller.NewAddCategory(srv, cfg))
+	mux.Handle("POST "+context+"/updateCategory", controller.NewUpdateCategory(srv, cfg))
+	mux.Handle("POST "+context+"/deleteCategories", controller.NewDeleteCategories(srv, cfg))
+	mux.Handle("POST "+context+"/deleteTransactions", controller.NewDeleteTransactions(srv, cfg))
+	mux.Handle("POST "+context+"/getCompleteGroups", controller.NewGetCompleteGroups(srv, cfg))
+	mux.Handle("POST "+context+"/getTransactionById", controller.NewGetTransactionById(srv, cfg))
+	mux.Handle("POST "+context+"/searchTransactions", controller.NewSearchTransactions(srv, cfg))
+	mux.Handle("POST "+context+"/addTransaction", controller.NewAddTransaction(srv, cfg))
+	mux.Handle("POST "+context+"/updateTransaction", controller.NewUpdateTransaction(srv, cfg))
+	mux.Handle("POST "+context+"/logout", controller.NewLogout(srv, cfg))
 
 	return mux
 }
