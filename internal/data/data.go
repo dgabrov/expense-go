@@ -2,7 +2,9 @@ package data
 
 type ConfigData struct {
 	Version  string         `json:"version"`
+	Context  string         `json:"context"`
 	Database DatabaseConfig `json:"database"`
+	Server   ServerConfig   `json:"server"`
 }
 
 type DatabaseConfig struct {
@@ -11,4 +13,9 @@ type DatabaseConfig struct {
 	Name     string `json:"name"`
 	User     string `json:"user"`
 	Password string `json:"password"`
+}
+
+type ServerConfig struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
 }

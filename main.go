@@ -6,11 +6,9 @@ import (
 )
 
 func main() {
-	db, err := proj.Start()
+	err := proj.Start()
 
 	if err != nil {
 		slog.Error("failed to start project", "error", err)
-		return
 	}
-	defer db.Close()
 }
