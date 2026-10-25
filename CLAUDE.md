@@ -22,3 +22,9 @@ This is an early scaffold with no real domain logic yet.
 - `docs/info/config.json` holds a version record (`"version": "1.0"`) that is not yet read by code. `docs/db/` and `docs/spec/` are empty placeholders.
 
 The `internal/` packages are where new application code should go. `internal/data` is the natural home for shared types, and `internal/proj` is the natural home for wiring them together at startup.
+
+## General
+
+- Any new acces to db, you add new method to server.Server
+- never push git nor ask about it
+- the database is in @docs/db/db_ddl.sql and you can connect locally at localhost:3306 login, password database all "expense", mariaDB
