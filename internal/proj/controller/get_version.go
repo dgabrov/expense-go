@@ -27,6 +27,5 @@ func (c *versionController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *versionController) process(r *http.Request) (string, error) {
-	// TODO
-	return "", nil
+	return c.cfg.Version, nil
 }

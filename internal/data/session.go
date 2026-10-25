@@ -9,4 +9,5 @@ type Session struct {
 	Login     string
 	Name      string
 	ExpiryDt  time.Time
+	Expired   bool
 }

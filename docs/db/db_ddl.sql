@@ -5,7 +5,8 @@ CREATE TABLE session
     user_id    VARCHAR(64)  NOT NULL,
     login      VARCHAR(64)  NOT NULL,
     name       VARCHAR(64)  NOT NULL DEFAULT '',
-    expiry_dt  DATETIME     NOT NULL
+    expiry_dt  DATETIME     NOT NULL,
+    expired_ind varchar(1) not null default 'N' -- *ind fields are either Y or N, and transpose to bool true if Y (case-insensitive) otherwise false
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci;
 
 CREATE TABLE account

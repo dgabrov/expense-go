@@ -4,11 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/dgabrov/expense-go/internal/data"
+	"github.com/dgabrov/expense-go/internal/proj/server"
 	"github.com/google/uuid"
 )
 
@@ -48,4 +51,29 @@ func createRandomToken() string {
 	randomBytes := make([]byte, 14)
 	_, _ = rand.Read(randomBytes)
 	return fmt.Sprintf("%s%s", u7.String(), hex.EncodeToString(randomBytes))[:64]
+}
+
+func checkLogged(r *http.Request, srv *server.Server) error {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return fmt.Errorf("not logged in: %w", err)
+	}
+
+	session, err := srv.GetSessionByToken(r.Context(), cookie.Value)
+	if err != nil {
+		return err
+	}
+	if session == nil {
+		return errors.New("session not found")
+	}
+
+	if session.Expired {
+		return errors.New("session expired")
+	}
+
+	if !session.ExpiryDt.After(time.Now().UTC()) {
+		return errors.New("session expired")
+	}
+
+	return nil
 }

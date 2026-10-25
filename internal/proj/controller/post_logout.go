@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/dgabrov/expense-go/internal/data"
@@ -27,6 +28,14 @@ func (c *logoutController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *logoutController) process(r *http.Request) error {
-	// TODO
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil {
+		return nil
+	}
+
+	if err = c.server.MarkSessionExpired(r.Context(), cookie.Value); err != nil {
+		slog.Error("logout: could not expire session", "error", err)
+	}
+
 	return nil
 }
