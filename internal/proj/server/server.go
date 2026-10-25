@@ -357,6 +357,72 @@ func (s *Server) deleteByIds(ctx context.Context, table, column, plural string, 
 	return nil
 }
 
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// SearchTransactions applies only the filters that are set, newest first.
+func (s *Server) SearchTransactions(ctx context.Context, search data.SearchData) ([]data.Transaction, error) {
+	conditions := make([]string, 0)
+	args := make([]any, 0)
+
+	if search.Search != nil && *search.Search != "" {
+		conditions = append(conditions, "name LIKE ?")
+		args = append(args, "%"+likeEscaper.Replace(*search.Search)+"%")
+	}
+	if search.AccountFilter != nil && *search.AccountFilter != "" {
+		conditions = append(conditions, "account_id = ?")
+		args = append(args, *search.AccountFilter)
+	}
+	if search.DateFrom != nil {
+		conditions = append(conditions, "transaction_date >= ?")
+		args = append(args, *search.DateFrom)
+	}
+	if search.DateTo != nil {
+		conditions = append(conditions, "transaction_date <= ?")
+		args = append(args, *search.DateTo)
+	}
+	if search.AmountFrom != nil {
+		conditions = append(conditions, "amount >= ?")
+		args = append(args, *search.AmountFrom)
+	}
+	if search.AmountTo != nil {
+		conditions = append(conditions, "amount <= ?")
+		args = append(args, *search.AmountTo)
+	}
+
+	query := "SELECT transaction_id, name, transaction_date, amount, account_id, category_id FROM `transaction`"
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	query += " ORDER BY transaction_date DESC, name"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying transactions: %w", err)
+	}
+	defer rows.Close()
+
+	transactions := make([]data.Transaction, 0)
+	for rows.Next() {
+		var transaction data.Transaction
+		var categoryId sql.NullString
+		if err := rows.Scan(&transaction.Id, &transaction.Name, &transaction.Date, &transaction.Amount, &transaction.AccountId, &categoryId); err != nil {
+			return nil, fmt.Errorf("scanning transaction: %w", err)
+		}
+
+		if categoryId.Valid {
+			transaction.CategoryId = &categoryId.String
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading transactions: %w", err)
+	}
+
+	return transactions, nil
+}
+
 // GetSessionByToken returns nil, nil when no session has the given token.
 func (s *Server) GetSessionByToken(ctx context.Context, token string) (*data.Session, error) {
 	var session data.Session

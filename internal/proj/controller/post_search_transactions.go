@@ -34,6 +34,5 @@ func (c *searchTransactionsController) process(r *http.Request) ([]data.Transact
 		return nil, fmt.Errorf("parsing search transactions request: %w", err)
 	}
 
-	// TODO
-	return nil, nil
+	return c.server.SearchTransactions(r.Context(), search)
 }
