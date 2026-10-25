@@ -9,6 +9,7 @@ import (
 
 	"github.com/dgabrov/expense-go/internal/data"
 	"github.com/dgabrov/expense-go/internal/proj/controller"
+	"github.com/dgabrov/expense-go/internal/proj/server"
 )
 
 const serverReadHeaderTimeout = 10 * time.Second
@@ -18,7 +19,7 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	context := cfg.Context
 
 	root := controller.NewRoot(db, cfg)
-	login := controller.NewLogin(db, cfg)
+	login := controller.NewLogin(server.NewServer(db, &cfg), cfg)
 
 	mux.Handle("GET "+context+"/{$}", root)
 	mux.Handle("POST "+context+"/login", login)
