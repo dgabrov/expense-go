@@ -1,6 +1,7 @@
 {
   "version": "1.0",
   "context": "",
+  "auth": "https://cbox.info/abax/loginNoToken",
   "database": {
     "host": "localhost",
     "port": 3306,

@@ -13,8 +13,9 @@ import (
 
 const serverReadHeaderTimeout = 10 * time.Second
 
-func newHandler(db *sql.DB, context string) http.Handler {
+func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux := http.NewServeMux()
+	context := cfg.Context
 
 	mux.HandleFunc("GET "+context+"/{$}", controller.GetRoot)
 
@@ -26,7 +27,7 @@ func serve(cfg data.ConfigData, db *sql.DB) error {
 
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           newHandler(db, cfg.Context),
+		Handler:           newHandler(db, cfg),
 		ReadHeaderTimeout: serverReadHeaderTimeout,
 	}
 
