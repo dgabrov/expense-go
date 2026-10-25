@@ -1,3 +1,4 @@
+# Login: sets the expenseCookie12 session cookie for later requests
 POST http://localhost:8080/login
 Content-Type: application/json
 
@@ -5,3 +6,30 @@ Content-Type: application/json
   "login": "test",
   "password": "test"
 }
+
+> {%
+client.test("login returns 200", function () {
+  client.assert(response.status === 200, "expected 200, got " + response.status);
+});
+%}
+
+###
+
+# Add transaction: needs an existing account with id "acc-test-1" (FK on account_id)
+POST http://localhost:8080/addTransaction
+Content-Type: application/json
+
+{
+  "id": "tx-test-0001",
+  "name": "Test groceries",
+  "date": "2026-10-01",
+  "amount": 12.5,
+  "accountId": "acc-test-1",
+  "categoryId": null
+}
+
+> {%
+client.test("add transaction returns 200", function () {
+  client.assert(response.status === 200, "expected 200, got " + response.status);
+});
+%}
