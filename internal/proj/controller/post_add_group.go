@@ -34,6 +34,5 @@ func (c *addGroupController) process(r *http.Request) error {
 		return fmt.Errorf("parsing add group request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.CreateGroup(r.Context(), group)
 }

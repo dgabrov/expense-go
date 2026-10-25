@@ -48,6 +48,48 @@ func (s *Server) ExtendSession(ctx context.Context, token string, expiryDt time.
 	return nil
 }
 
+func (s *Server) CreateAccount(ctx context.Context, account data.Account) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO account (account_id, account_name, cash) VALUES (?, ?, ?)`,
+		account.Id, account.Name, boolToInd(account.Cash))
+	if err != nil {
+		return fmt.Errorf("inserting account: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) CreateGroup(ctx context.Context, group data.Group) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO expense_group (group_id, group_name) VALUES (?, ?)`,
+		group.Id, group.Name)
+	if err != nil {
+		return fmt.Errorf("inserting group: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Server) CreateCategory(ctx context.Context, category data.Category) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO expense_category (category_id, group_id, category_name) VALUES (?, ?, ?)`,
+		category.Id, category.GroupId, category.Name)
+	if err != nil {
+		return fmt.Errorf("inserting category: %w", err)
+	}
+
+	return nil
+}
+
+// boolToInd maps a bool to the Y/N convention used by *ind columns.
+func boolToInd(value bool) string {
+	if value {
+		return "Y"
+	}
+
+	return "N"
+}
+
 // GetSessionByToken returns nil, nil when no session has the given token.
 func (s *Server) GetSessionByToken(ctx context.Context, token string) (*data.Session, error) {
 	var session data.Session

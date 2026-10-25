@@ -34,6 +34,5 @@ func (c *addAccountController) process(r *http.Request) error {
 		return fmt.Errorf("parsing add account request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.CreateAccount(r.Context(), account)
 }

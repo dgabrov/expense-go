@@ -34,6 +34,5 @@ func (c *addCategoryController) process(r *http.Request) error {
 		return fmt.Errorf("parsing add category request: %w", err)
 	}
 
-	// TODO
-	return nil
+	return c.server.CreateCategory(r.Context(), category)
 }
