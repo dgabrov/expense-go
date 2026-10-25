@@ -1,8 +1,7 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/dgabrov/expense-go/internal/data"
@@ -29,11 +28,10 @@ func (c *getTransactionByIdController) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (c *getTransactionByIdController) process(r *http.Request) (*data.Transaction, error) {
-	var id string
-	if err := json.NewDecoder(r.Body).Decode(&id); err != nil {
-		return nil, fmt.Errorf("parsing get transaction request: %w", err)
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		return nil, errors.New("id query parameter is required")
 	}
 
-	// TODO
-	return nil, nil
+	return c.server.GetTransactionById(r.Context(), id)
 }

@@ -27,6 +27,5 @@ func (c *getGroupsController) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *getGroupsController) process(r *http.Request) ([]data.Group, error) {
-	// TODO
-	return nil, nil
+	return c.server.GetGroups(r.Context())
 }

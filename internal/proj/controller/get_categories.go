@@ -1,8 +1,7 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/dgabrov/expense-go/internal/data"
@@ -29,11 +28,10 @@ func (c *getCategoriesController) ServeHTTP(w http.ResponseWriter, r *http.Reque
 }
 
 func (c *getCategoriesController) process(r *http.Request) ([]data.Category, error) {
-	var groupId string
-	if err := json.NewDecoder(r.Body).Decode(&groupId); err != nil {
-		return nil, fmt.Errorf("parsing get categories request: %w", err)
+	groupId := r.URL.Query().Get("groupId")
+	if groupId == "" {
+		return nil, errors.New("groupId query parameter is required")
 	}
 
-	// TODO
-	return nil, nil
+	return c.server.GetCategories(r.Context(), groupId)
 }

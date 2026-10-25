@@ -27,6 +27,5 @@ func (c *getAccountsController) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (c *getAccountsController) process(r *http.Request) ([]data.Account, error) {
-	// TODO
-	return nil, nil
+	return c.server.GetAccounts(r.Context())
 }

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dgabrov/expense-go/internal/data"
@@ -88,6 +89,142 @@ func boolToInd(value bool) string {
 	}
 
 	return "N"
+}
+
+func (s *Server) GetAccounts(ctx context.Context) ([]data.Account, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT account_id, account_name, cash FROM account`)
+	if err != nil {
+		return nil, fmt.Errorf("querying accounts: %w", err)
+	}
+	defer rows.Close()
+
+	accounts := make([]data.Account, 0)
+	for rows.Next() {
+		var account data.Account
+		var cash string
+		if err := rows.Scan(&account.Id, &account.Name, &cash); err != nil {
+			return nil, fmt.Errorf("scanning account: %w", err)
+		}
+
+		account.Cash = indToBool(cash)
+		accounts = append(accounts, account)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading accounts: %w", err)
+	}
+
+	return accounts, nil
+}
+
+func (s *Server) GetGroups(ctx context.Context) ([]data.Group, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT group_id, group_name FROM expense_group`)
+	if err != nil {
+		return nil, fmt.Errorf("querying groups: %w", err)
+	}
+	defer rows.Close()
+
+	groups := make([]data.Group, 0)
+	for rows.Next() {
+		var group data.Group
+		if err := rows.Scan(&group.Id, &group.Name); err != nil {
+			return nil, fmt.Errorf("scanning group: %w", err)
+		}
+
+		groups = append(groups, group)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading groups: %w", err)
+	}
+
+	return groups, nil
+}
+
+func (s *Server) GetCategories(ctx context.Context, groupId string) ([]data.Category, error) {
+	return s.queryCategories(ctx,
+		`SELECT category_id, group_id, category_name FROM expense_category WHERE group_id = ?`, groupId)
+}
+
+func (s *Server) GetCompleteGroups(ctx context.Context) ([]data.CompleteGroup, error) {
+	groups, err := s.GetGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	categories, err := s.queryCategories(ctx, `SELECT category_id, group_id, category_name FROM expense_category`)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]data.CompleteGroup, 0, len(groups))
+	positions := make(map[string]int, len(groups))
+	for _, group := range groups {
+		positions[group.Id] = len(result)
+		result = append(result, data.CompleteGroup{
+			Id:         group.Id,
+			Name:       group.Name,
+			Categories: make([]data.Category, 0),
+		})
+	}
+
+	for _, category := range categories {
+		if position, ok := positions[category.GroupId]; ok {
+			result[position].Categories = append(result[position].Categories, category)
+		}
+	}
+
+	return result, nil
+}
+
+// GetTransactionById returns nil, nil when no transaction has the given id.
+func (s *Server) GetTransactionById(ctx context.Context, id string) (*data.Transaction, error) {
+	var transaction data.Transaction
+	var categoryId sql.NullString
+	err := s.db.QueryRowContext(ctx,
+		"SELECT transaction_id, name, transaction_date, amount, account_id, category_id FROM `transaction` WHERE transaction_id = ?",
+		id).Scan(&transaction.Id, &transaction.Name, &transaction.Date, &transaction.Amount, &transaction.AccountId, &categoryId)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("querying transaction by id: %w", err)
+	}
+
+	if categoryId.Valid {
+		transaction.CategoryId = &categoryId.String
+	}
+
+	return &transaction, nil
+}
+
+func (s *Server) queryCategories(ctx context.Context, query string, args ...any) ([]data.Category, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying categories: %w", err)
+	}
+	defer rows.Close()
+
+	categories := make([]data.Category, 0)
+	for rows.Next() {
+		var category data.Category
+		if err := rows.Scan(&category.Id, &category.GroupId, &category.Name); err != nil {
+			return nil, fmt.Errorf("scanning category: %w", err)
+		}
+
+		categories = append(categories, category)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading categories: %w", err)
+	}
+
+	return categories, nil
+}
+
+// indToBool maps a Y/N *ind column value to a bool; anything other than Y is false.
+func indToBool(value string) bool {
+	return strings.EqualFold(value, "Y")
 }
 
 // GetSessionByToken returns nil, nil when no session has the given token.

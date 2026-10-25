@@ -27,6 +27,5 @@ func (c *getCompleteGroupsController) ServeHTTP(w http.ResponseWriter, r *http.R
 }
 
 func (c *getCompleteGroupsController) process(r *http.Request) ([]data.CompleteGroup, error) {
-	// TODO
-	return nil, nil
+	return c.server.GetCompleteGroups(r.Context())
 }
