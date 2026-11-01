@@ -43,7 +43,20 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux.Handle("POST "+context+"/updateTransaction", controller.NewUpdateTransaction(srv, cfg))
 	mux.Handle("POST "+context+"/logout", controller.NewLogout(srv, cfg))
 
+	if cfg.Server.LogRequests {
+		return logRequests(mux)
+	}
+
 	return mux
+}
+
+// logRequests logs the method and URL of every request before it is routed,
+// so requests that match no route (404s) are logged as well.
+func logRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("http request", "method", r.Method, "url", r.URL.String())
+		next.ServeHTTP(w, r)
+	})
 }
 
 func serve(cfg data.ConfigData, db *sql.DB) error {

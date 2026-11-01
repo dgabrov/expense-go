@@ -18,8 +18,9 @@ type DatabaseConfig struct {
 }
 
 type ServerConfig struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	LogRequests bool   `json:"logRequests"`
 }
 
 type IdsHolder struct {
