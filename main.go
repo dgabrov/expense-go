@@ -1,7 +1,7 @@
 package main
 
 import (
-	"expense-go/internal/proj"
+	"github.com/dgabrov/expense-go/internal/proj"
 	"log/slog"
 )
 
