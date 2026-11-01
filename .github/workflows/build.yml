@@ -1,11 +1,9 @@
 name: expense backend - golang
 run-name: expense backend - golang
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types:
-      - closed
 
 jobs:
   docker_login:
