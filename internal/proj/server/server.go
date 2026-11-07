@@ -286,7 +286,42 @@ func indToBool(value string) bool {
 }
 
 func (s *Server) CreateTransaction(ctx context.Context, transaction data.Transaction) error {
-	_, err := s.db.ExecContext(ctx,
+	return insertTransaction(ctx, s.db, transaction)
+}
+
+// CreateTransactions inserts all transactions in one database transaction:
+// either every row is stored or none is.
+func (s *Server) CreateTransactions(ctx context.Context, transactions []data.Transaction) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction insert: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, transaction := range transactions {
+		if err := insertTransaction(ctx, tx, transaction); err != nil {
+			return fmt.Errorf("transaction %s: %w", transaction.Id, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction insert: %w", err)
+	}
+
+	return nil
+}
+
+// execer is satisfied by both *sql.DB and *sql.Tx.
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func insertTransaction(ctx context.Context, e execer, transaction data.Transaction) error {
+	_, err := e.ExecContext(ctx,
 		"INSERT INTO `transaction` (transaction_id, name, transaction_date, amount, account_id, category_id) VALUES (?, ?, ?, ?, ?, ?)",
 		transaction.Id, transaction.Name, transaction.Date, transaction.Amount, transaction.AccountId, transaction.CategoryId)
 	if err != nil {

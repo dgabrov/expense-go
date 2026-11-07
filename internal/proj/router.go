@@ -40,6 +40,7 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux.Handle("GET "+context+"/getTransactionById", controller.NewGetTransactionById(srv, cfg))
 	mux.Handle("POST "+context+"/searchTransactions", controller.NewSearchTransactions(srv, cfg))
 	mux.Handle("POST "+context+"/addTransaction", controller.NewAddTransaction(srv, cfg))
+	mux.Handle("POST "+context+"/addBulk", controller.NewAddBulk(srv, cfg))
 	mux.Handle("POST "+context+"/updateTransaction", controller.NewUpdateTransaction(srv, cfg))
 	mux.Handle("POST "+context+"/logout", controller.NewLogout(srv, cfg))
 
