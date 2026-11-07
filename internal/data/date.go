@@ -17,6 +17,17 @@ type Date struct {
 	Day   int
 }
 
+// After reports whether d is later than other.
+func (d *Date) After(other Date) bool {
+	if d.Year != other.Year {
+		return d.Year > other.Year
+	}
+	if d.Month != other.Month {
+		return d.Month > other.Month
+	}
+	return d.Day > other.Day
+}
+
 func (d Date) String() string {
 	return fmt.Sprintf("%04d-%02d-%02d", d.Year, d.Month, d.Day)
 }
@@ -63,4 +74,39 @@ func (d *Date) parse(s string) error {
 
 	d.Year, d.Month, d.Day = parsed.Year(), parsed.Month(), parsed.Day()
 	return nil
+}
+
+func GetDateRange(startMonth, startYear, endMonth, endYear int) (*Date, *Date, error) {
+	if !validMonthYear(startMonth, startYear) {
+		return nil, nil, fmt.Errorf("invalid start month/year %d/%d", startMonth, startYear)
+	}
+
+	start := &Date{
+		Year:  startYear,
+		Month: time.Month(startMonth),
+		Day:   1,
+	}
+
+	if endMonth == 0 && endYear == 0 {
+		return start, nil, nil
+	}
+	if !validMonthYear(endMonth, endYear) {
+		return nil, nil, fmt.Errorf("invalid end month/year %d/%d", endMonth, endYear)
+	}
+
+	end := &Date{
+		Year:  endYear,
+		Month: time.Month(endMonth) + 1,
+		Day:   1,
+	}
+	if end.Month > time.December {
+		end.Month = time.January
+		end.Year++
+	}
+
+	return start, end, nil
+}
+
+func validMonthYear(month, year int) bool {
+	return month >= int(time.January) && month <= int(time.December) && year >= 1 && year <= 9999
 }
