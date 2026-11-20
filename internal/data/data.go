@@ -2,8 +2,6 @@ package data
 
 import (
 	"errors"
-
-	"github.com/dgabrov/expense-go/internal/impl"
 )
 
 type ConfigData struct {
@@ -50,6 +48,10 @@ func (v FilterData) validate() error {
 	return nil
 }
 
+const ReportLast = "last"
+const ReportGroup = "group"
+const ReportCategory = "category"
+
 type ReportRequest struct {
 	Start       *FilterData
 	End         *FilterData
@@ -81,6 +83,14 @@ func (r ReportRequest) validate() error {
 			return err
 		}
 
+		if date2 != nil && !date2.After(*date1) {
+			return errors.New("start date is after end date")
+		}
+
+		if !(r.ReportType == ReportCategory || r.ReportType == ReportGroup || r.ReportType == ReportLast) {
+			return errors.New("invalid report type")
+		}
 	}
 
+	return nil
 }
