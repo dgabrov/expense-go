@@ -94,3 +94,8 @@ func (r ReportRequest) validate() error {
 
 	return nil
 }
+
+type ReportLastResponse struct {
+	AccountID string
+	LastDate  Date
+}
