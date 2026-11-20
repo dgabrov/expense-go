@@ -43,6 +43,9 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux.Handle("POST "+context+"/addBulk", controller.NewAddBulk(srv, cfg))
 	mux.Handle("POST "+context+"/updateTransaction", controller.NewUpdateTransaction(srv, cfg))
 	mux.Handle("POST "+context+"/logout", controller.NewLogout(srv, cfg))
+	mux.Handle("POST "+context+"/report/last", controller.NewReportLast(srv, cfg))
+	mux.Handle("POST "+context+"/report/group", controller.NewReportGroup(srv, cfg))
+	mux.Handle("POST "+context+"/report/category", controller.NewReportCategory(srv, cfg))
 
 	if cfg.Server.LogRequests {
 		return logRequests(mux)
