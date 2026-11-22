@@ -28,6 +28,10 @@ func (c *getCategoriesController) ServeHTTP(w http.ResponseWriter, r *http.Reque
 }
 
 func (c *getCategoriesController) process(r *http.Request) ([]data.Category, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	groupId := r.URL.Query().Get("groupId")
 	if groupId == "" {
 		return nil, errors.New("groupId query parameter is required")

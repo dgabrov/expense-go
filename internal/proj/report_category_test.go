@@ -10,9 +10,9 @@ import (
 const reportCategoryPath = "/expbck/report/category"
 
 func TestReportCategoryStartWithoutEnd(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	rec, response := postReport[data.ReportCategoryResponse](t, handler, reportCategoryPath,
+	rec, response := postReport[data.ReportCategoryResponse](t, handler, cookie, reportCategoryPath,
 		`{"Start":{"Month":11,"Year":2012}}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
@@ -32,9 +32,9 @@ func TestReportCategoryStartWithoutEnd(t *testing.T) {
 }
 
 func TestReportCategoryStartAndEnd(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	rec, response := postReport[data.ReportCategoryResponse](t, handler, reportCategoryPath,
+	rec, response := postReport[data.ReportCategoryResponse](t, handler, cookie, reportCategoryPath,
 		`{"Start":{"Month":11,"Year":2012},"End":{"Month":12,"Year":2012}}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
@@ -51,7 +51,7 @@ func TestReportCategoryStartAndEnd(t *testing.T) {
 }
 
 func TestReportCategoryEndBeforeStart(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	assertEndBeforeStartRejected(t, handler, reportCategoryPath)
+	assertEndBeforeStartRejected(t, handler, cookie, reportCategoryPath)
 }

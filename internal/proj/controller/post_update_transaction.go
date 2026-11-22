@@ -29,6 +29,10 @@ func (c *updateTransactionController) ServeHTTP(w http.ResponseWriter, r *http.R
 }
 
 func (c *updateTransactionController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var transaction data.Transaction
 	if err := json.NewDecoder(r.Body).Decode(&transaction); err != nil {
 		return fmt.Errorf("parsing update transaction request: %w", err)

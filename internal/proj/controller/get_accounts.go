@@ -27,5 +27,9 @@ func (c *getAccountsController) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (c *getAccountsController) process(r *http.Request) ([]data.Account, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	return c.server.GetAccounts(r.Context())
 }

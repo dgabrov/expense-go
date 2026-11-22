@@ -29,6 +29,10 @@ func (c *updateGroupController) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (c *updateGroupController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var group data.Group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		return fmt.Errorf("parsing update group request: %w", err)

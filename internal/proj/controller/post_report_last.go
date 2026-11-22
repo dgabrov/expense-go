@@ -29,6 +29,10 @@ func (c *reportLastController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (c *reportLastController) process(r *http.Request) ([]data.ReportLastResponse, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	var request data.ReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, fmt.Errorf("parsing last report request: %w", err)

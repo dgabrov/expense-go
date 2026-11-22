@@ -29,6 +29,10 @@ func (c *reportCategoryController) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *reportCategoryController) process(r *http.Request) (data.ReportCategoryResponse, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return data.ReportCategoryResponse{}, err
+	}
+
 	var request data.ReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return data.ReportCategoryResponse{}, fmt.Errorf("parsing category report request: %w", err)

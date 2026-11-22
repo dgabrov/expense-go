@@ -29,6 +29,10 @@ func (c *reportListController) ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 func (c *reportListController) process(r *http.Request) (data.ReportListResponse, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return data.ReportListResponse{}, err
+	}
+
 	var request data.ReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return data.ReportListResponse{}, fmt.Errorf("parsing list report request: %w", err)

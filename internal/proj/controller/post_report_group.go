@@ -29,6 +29,10 @@ func (c *reportGroupController) ServeHTTP(w http.ResponseWriter, r *http.Request
 }
 
 func (c *reportGroupController) process(r *http.Request) (data.ReportGroupResponse, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return data.ReportGroupResponse{}, err
+	}
+
 	var request data.ReportRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return data.ReportGroupResponse{}, fmt.Errorf("parsing group report request: %w", err)

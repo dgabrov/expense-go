@@ -20,7 +20,7 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 
 	srv := server.NewServer(db, &cfg)
 
-	mux.Handle("GET "+context+"/{$}", controller.NewRoot(db, cfg))
+	mux.Handle("GET "+context+"/{$}", controller.NewRoot(srv, cfg))
 	mux.Handle("POST "+context+"/login", controller.NewLogin(srv, cfg))
 	mux.Handle("POST "+context+"/version", controller.NewVersion(srv, cfg))
 	mux.Handle("GET "+context+"/getAccounts", controller.NewGetAccounts(srv, cfg))

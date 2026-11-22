@@ -29,6 +29,10 @@ func (c *searchTransactionsController) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (c *searchTransactionsController) process(r *http.Request) ([]data.Transaction, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	var search data.SearchData
 	if err := json.NewDecoder(r.Body).Decode(&search); err != nil {
 		return nil, fmt.Errorf("parsing search transactions request: %w", err)

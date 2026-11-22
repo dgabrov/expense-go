@@ -27,5 +27,9 @@ func (c *getGroupsController) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func (c *getGroupsController) process(r *http.Request) ([]data.Group, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	return c.server.GetGroups(r.Context())
 }

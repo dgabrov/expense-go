@@ -29,6 +29,10 @@ func (c *updateAccountController) ServeHTTP(w http.ResponseWriter, r *http.Reque
 }
 
 func (c *updateAccountController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var account data.Account
 	if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
 		return fmt.Errorf("parsing update account request: %w", err)

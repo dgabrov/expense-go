@@ -10,9 +10,9 @@ import (
 const reportListPath = "/expbck/report/list"
 
 func TestReportListStartWithoutEnd(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	rec, response := postReport[data.ReportListResponse](t, handler, reportListPath,
+	rec, response := postReport[data.ReportListResponse](t, handler, cookie, reportListPath,
 		`{"Start":{"Month":11,"Year":2012}}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
@@ -32,9 +32,9 @@ func TestReportListStartWithoutEnd(t *testing.T) {
 }
 
 func TestReportListStartAndEnd(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	rec, response := postReport[data.ReportListResponse](t, handler, reportListPath,
+	rec, response := postReport[data.ReportListResponse](t, handler, cookie, reportListPath,
 		`{"Start":{"Month":11,"Year":2012},"End":{"Month":12,"Year":2012}}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
@@ -51,7 +51,7 @@ func TestReportListStartAndEnd(t *testing.T) {
 }
 
 func TestReportListEndBeforeStart(t *testing.T) {
-	handler := setupReportHandler(t)
+	handler, cookie := setupReportHandler(t)
 
-	assertEndBeforeStartRejected(t, handler, reportListPath)
+	assertEndBeforeStartRejected(t, handler, cookie, reportListPath)
 }

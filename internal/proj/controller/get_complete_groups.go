@@ -27,5 +27,9 @@ func (c *getCompleteGroupsController) ServeHTTP(w http.ResponseWriter, r *http.R
 }
 
 func (c *getCompleteGroupsController) process(r *http.Request) ([]data.CompleteGroup, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	return c.server.GetCompleteGroups(r.Context())
 }
