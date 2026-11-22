@@ -1,11 +1,9 @@
 @host = http://localhost:8080
 @context = /expbck
-@token = paste-session-token-here
 
 ### Group report: start without end
 POST {{host}}{{context}}/report/group
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -17,7 +15,6 @@ Cookie: expenseCookie12={{token}}
 ### Group report: start and end
 POST {{host}}{{context}}/report/group
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -34,7 +31,6 @@ Cookie: expenseCookie12={{token}}
 ### Group report: start, end, end before start (expect 400)
 POST {{host}}{{context}}/report/group
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -50,14 +46,12 @@ Cookie: expenseCookie12={{token}}
 ### Group report: missing start (expect 400)
 POST {{host}}{{context}}/report/group
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {}
 
 ### Group report: start with ExcludeNone
 POST {{host}}{{context}}/report/group
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {

@@ -1,11 +1,9 @@
 @host = http://localhost:8080
 @context = /expbck
-@token = paste-session-token-here
 
 ### Category report: start without end
 POST {{host}}{{context}}/report/category
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -17,7 +15,6 @@ Cookie: expenseCookie12={{token}}
 ### Category report: start and end
 POST {{host}}{{context}}/report/category
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -33,7 +30,6 @@ Cookie: expenseCookie12={{token}}
 ### Category report: start, end, end before start (expect 400)
 POST {{host}}{{context}}/report/category
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
@@ -49,14 +45,12 @@ Cookie: expenseCookie12={{token}}
 ### Category report: missing start (expect 400)
 POST {{host}}{{context}}/report/category
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {}
 
 ### Category report: start with ExcludeNone
 POST {{host}}{{context}}/report/category
 Content-Type: application/json
-Cookie: expenseCookie12={{token}}
 
 {
   "Start": {
