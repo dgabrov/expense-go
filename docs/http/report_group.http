@@ -1,0 +1,66 @@
+@host = http://localhost:8080
+@context = /expbck
+
+### Group report: start without end
+POST {{host}}{{context}}/report/group
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 11,
+    "Year": 2012
+  }
+}
+
+### Group report: start and end
+POST {{host}}{{context}}/report/group
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 11,
+    "Year": 2012
+  },
+  "End": {
+    "Month": 12,
+    "Year": 2012
+  },
+  "ExcludeNone": true
+}
+
+### Group report: start, end, end before start (expect 400)
+POST {{host}}{{context}}/report/group
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 5,
+    "Year": 2013
+  },
+  "End": {
+    "Month": 1,
+    "Year": 2013
+  }
+}
+
+### Group report: missing start (expect 400)
+POST {{host}}{{context}}/report/group
+Content-Type: application/json
+
+{}
+
+### Group report: start with ExcludeNone
+POST {{host}}{{context}}/report/group
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 11,
+    "Year": 2012
+  },
+  "End": {
+    "Month": 12,
+    "Year": 2012
+  },
+  "ExcludeNone": true
+}

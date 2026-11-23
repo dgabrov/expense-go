@@ -20,7 +20,7 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 
 	srv := server.NewServer(db, &cfg)
 
-	mux.Handle("GET "+context+"/{$}", controller.NewRoot(db, cfg))
+	mux.Handle("GET "+context+"/{$}", controller.NewRoot(srv, cfg))
 	mux.Handle("POST "+context+"/login", controller.NewLogin(srv, cfg))
 	mux.Handle("POST "+context+"/version", controller.NewVersion(srv, cfg))
 	mux.Handle("GET "+context+"/getAccounts", controller.NewGetAccounts(srv, cfg))
@@ -40,8 +40,13 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux.Handle("GET "+context+"/getTransactionById", controller.NewGetTransactionById(srv, cfg))
 	mux.Handle("POST "+context+"/searchTransactions", controller.NewSearchTransactions(srv, cfg))
 	mux.Handle("POST "+context+"/addTransaction", controller.NewAddTransaction(srv, cfg))
+	mux.Handle("POST "+context+"/addBulk", controller.NewAddBulk(srv, cfg))
 	mux.Handle("POST "+context+"/updateTransaction", controller.NewUpdateTransaction(srv, cfg))
 	mux.Handle("POST "+context+"/logout", controller.NewLogout(srv, cfg))
+	mux.Handle("POST "+context+"/report/last", controller.NewReportLast(srv, cfg))
+	mux.Handle("POST "+context+"/report/group", controller.NewReportGroup(srv, cfg))
+	mux.Handle("POST "+context+"/report/category", controller.NewReportCategory(srv, cfg))
+	mux.Handle("POST "+context+"/report/list", controller.NewReportList(srv, cfg))
 
 	if cfg.Server.LogRequests {
 		return logRequests(mux)

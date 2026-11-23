@@ -29,6 +29,10 @@ func (c *addGroupController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *addGroupController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var group data.Group
 	if err := json.NewDecoder(r.Body).Decode(&group); err != nil {
 		return fmt.Errorf("parsing add group request: %w", err)

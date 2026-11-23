@@ -29,6 +29,10 @@ func (c *updateCategoryController) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *updateCategoryController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var category data.Category
 	if err := json.NewDecoder(r.Body).Decode(&category); err != nil {
 		return fmt.Errorf("parsing update category request: %w", err)

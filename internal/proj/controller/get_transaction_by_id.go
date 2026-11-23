@@ -28,6 +28,10 @@ func (c *getTransactionByIdController) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (c *getTransactionByIdController) process(r *http.Request) (*data.Transaction, error) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return nil, err
+	}
+
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		return nil, errors.New("id query parameter is required")

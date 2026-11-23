@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
 	"github.com/dgabrov/expense-go/internal/data"
+	"github.com/dgabrov/expense-go/internal/proj/server"
 )
 
 type Root interface {
@@ -13,14 +13,19 @@ type Root interface {
 }
 
 type rootController struct {
-	db  *sql.DB
-	cfg data.ConfigData
+	server *server.Server
+	cfg    data.ConfigData
 }
 
-func NewRoot(db *sql.DB, cfg data.ConfigData) Root {
-	return &rootController{db: db, cfg: cfg}
+func NewRoot(srv *server.Server, cfg data.ConfigData) Root {
+	return &rootController{server: srv, cfg: cfg}
 }
 
 func (c *rootController) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		writeJsonResponse(w, nil, err)
+		return
+	}
+
 	fmt.Fprint(w, "success")
 }

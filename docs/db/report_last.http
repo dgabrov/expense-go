@@ -1,0 +1,40 @@
+# Last report: latest transaction date per account, for transactions on or after Jan 2025 (inclusive)
+POST http://localhost:8080/expbck/report/last
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 1,
+    "Year": 2025
+  }
+}
+
+> {%
+client.test("last report returns 200", function () {
+  client.assert(response.status === 200, "expected 200, got " + response.status);
+});
+client.test("last report returns an array", function () {
+  client.assert(Array.isArray(response.body), "expected a JSON array");
+});
+%}
+
+###
+
+# Missing start: expect 400 with "please fill out the start date"
+POST http://localhost:8080/expbck/report/last
+Content-Type: application/json
+
+{}
+
+###
+
+# Invalid month: expect 400 with "invalid month"
+POST http://localhost:8080/expbck/report/last
+Content-Type: application/json
+
+{
+  "Start": {
+    "Month": 13,
+    "Year": 2025
+  }
+}

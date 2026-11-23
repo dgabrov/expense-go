@@ -29,6 +29,10 @@ func (c *deleteTransactionsController) ServeHTTP(w http.ResponseWriter, r *http.
 }
 
 func (c *deleteTransactionsController) process(r *http.Request) error {
+	if err := checkLogged(r, c.server, c.cfg); err != nil {
+		return err
+	}
+
 	var holder data.IdsHolder
 	if err := json.NewDecoder(r.Body).Decode(&holder); err != nil {
 		return fmt.Errorf("parsing delete transactions request: %w", err)

@@ -286,7 +286,42 @@ func indToBool(value string) bool {
 }
 
 func (s *Server) CreateTransaction(ctx context.Context, transaction data.Transaction) error {
-	_, err := s.db.ExecContext(ctx,
+	return insertTransaction(ctx, s.db, transaction)
+}
+
+// CreateTransactions inserts all transactions in one database transaction:
+// either every row is stored or none is.
+func (s *Server) CreateTransactions(ctx context.Context, transactions []data.Transaction) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting transaction insert: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, transaction := range transactions {
+		if err := insertTransaction(ctx, tx, transaction); err != nil {
+			return fmt.Errorf("transaction %s: %w", transaction.Id, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction insert: %w", err)
+	}
+
+	return nil
+}
+
+// execer is satisfied by both *sql.DB and *sql.Tx.
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func insertTransaction(ctx context.Context, e execer, transaction data.Transaction) error {
+	_, err := e.ExecContext(ctx,
 		"INSERT INTO `transaction` (transaction_id, name, transaction_date, amount, account_id, category_id) VALUES (?, ?, ?, ?, ?, ?)",
 		transaction.Id, transaction.Name, transaction.Date, transaction.Amount, transaction.AccountId, transaction.CategoryId)
 	if err != nil {
@@ -418,6 +453,184 @@ func (s *Server) SearchTransactions(ctx context.Context, search data.SearchData)
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("reading transactions: %w", err)
+	}
+
+	return transactions, nil
+}
+
+// GetLastTransactionDates returns, for each account with a transaction on or after
+// from, the account id and its latest transaction date. Ordered by account id.
+func (s *Server) GetLastTransactionDates(ctx context.Context, from data.Date) ([]data.ReportLastResponse, error) {
+	rows, err := s.db.QueryContext(ctx,
+		"SELECT account_id, MAX(transaction_date) FROM `transaction` WHERE transaction_date >= ? GROUP BY account_id ORDER BY account_id",
+		from)
+	if err != nil {
+		return nil, fmt.Errorf("querying last transaction dates: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]data.ReportLastResponse, 0)
+	for rows.Next() {
+		var last data.ReportLastResponse
+		if err := rows.Scan(&last.AccountID, &last.LastDate); err != nil {
+			return nil, fmt.Errorf("scanning last transaction date: %w", err)
+		}
+
+		result = append(result, last)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading last transaction dates: %w", err)
+	}
+
+	return result, nil
+}
+
+// GetGroupReport sums transaction amounts per year, month and group, from (inclusive)
+// and, when to is not nil, before to (exclusive). Transactions without a category or
+// group are reported with an empty group id. When excludeNone is set, the group named
+// "none" is left out; unassigned transactions are kept.
+func (s *Server) GetGroupReport(ctx context.Context, from data.Date, to *data.Date, excludeNone bool) ([]data.ReportGroupResponseItem, error) {
+	conditions := []string{"t.transaction_date >= ?"}
+	args := []any{from}
+
+	if to != nil {
+		conditions = append(conditions, "t.transaction_date < ?")
+		args = append(args, *to)
+	}
+	// LEFT JOINs keep unassigned transactions, whose group name is NULL; the NULL check
+	// is needed because NULL <> 'none' is not true. The collation makes the match case-insensitive.
+	if excludeNone {
+		conditions = append(conditions, "(g.group_name IS NULL OR g.group_name <> 'none')")
+	}
+
+	query := "SELECT YEAR(t.transaction_date) AS report_year, MONTH(t.transaction_date) AS report_month, " +
+		"COALESCE(g.group_id, '') AS report_group, SUM(t.amount) AS report_amount " +
+		"FROM `transaction` t " +
+		"LEFT JOIN expense_category c ON c.category_id = t.category_id " +
+		"LEFT JOIN expense_group g ON g.group_id = c.group_id " +
+		"WHERE " + strings.Join(conditions, " AND ") + " " +
+		"GROUP BY YEAR(t.transaction_date), MONTH(t.transaction_date), COALESCE(g.group_id, '') " +
+		"ORDER BY report_year, report_month, report_group"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying group report: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]data.ReportGroupResponseItem, 0)
+	for rows.Next() {
+		var item data.ReportGroupResponseItem
+		if err := rows.Scan(&item.Year, &item.Month, &item.GroupID, &item.Amount); err != nil {
+			return nil, fmt.Errorf("scanning group report item: %w", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading group report: %w", err)
+	}
+
+	return items, nil
+}
+
+// GetCategoryReport sums transaction amounts per year, month and category, from (inclusive)
+// and, when to is not nil, before to (exclusive). Transactions without a category are
+// reported with an empty category id. When excludeNone is set, transactions whose category
+// belongs to the group named "none" are left out; unassigned transactions are kept.
+func (s *Server) GetCategoryReport(ctx context.Context, from data.Date, to *data.Date, excludeNone bool) ([]data.ReportCategoryResponseItem, error) {
+	conditions := []string{"t.transaction_date >= ?"}
+	args := []any{from}
+
+	if to != nil {
+		conditions = append(conditions, "t.transaction_date < ?")
+		args = append(args, *to)
+	}
+	// same NULL-safe group name check as GetGroupReport
+	if excludeNone {
+		conditions = append(conditions, "(g.group_name IS NULL OR g.group_name <> 'none')")
+	}
+
+	query := "SELECT YEAR(t.transaction_date) AS report_year, MONTH(t.transaction_date) AS report_month, " +
+		"COALESCE(t.category_id, '') AS report_category, SUM(t.amount) AS report_amount " +
+		"FROM `transaction` t " +
+		"LEFT JOIN expense_category c ON c.category_id = t.category_id " +
+		"LEFT JOIN expense_group g ON g.group_id = c.group_id " +
+		"WHERE " + strings.Join(conditions, " AND ") + " " +
+		"GROUP BY YEAR(t.transaction_date), MONTH(t.transaction_date), COALESCE(t.category_id, '') " +
+		"ORDER BY report_year, report_month, report_category"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying category report: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]data.ReportCategoryResponseItem, 0)
+	for rows.Next() {
+		var item data.ReportCategoryResponseItem
+		if err := rows.Scan(&item.Year, &item.Month, &item.CategoryID, &item.Amount); err != nil {
+			return nil, fmt.Errorf("scanning category report item: %w", err)
+		}
+
+		items = append(items, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading category report: %w", err)
+	}
+
+	return items, nil
+}
+
+// ListTransactions returns the transactions dated from (inclusive) and, when to is not nil,
+// before to (exclusive), newest first. When excludeNone is set, transactions whose category
+// belongs to the group named "none" are left out; unassigned transactions are kept.
+func (s *Server) ListTransactions(ctx context.Context, from data.Date, to *data.Date, excludeNone bool) ([]data.Transaction, error) {
+	conditions := []string{"t.transaction_date >= ?"}
+	args := []any{from}
+
+	if to != nil {
+		conditions = append(conditions, "t.transaction_date < ?")
+		args = append(args, *to)
+	}
+	// same NULL-safe group name check as GetGroupReport
+	if excludeNone {
+		conditions = append(conditions, "(g.group_name IS NULL OR g.group_name <> 'none')")
+	}
+
+	query := "SELECT t.transaction_id, t.name, t.transaction_date, t.amount, t.account_id, t.category_id " +
+		"FROM `transaction` t " +
+		"LEFT JOIN expense_category c ON c.category_id = t.category_id " +
+		"LEFT JOIN expense_group g ON g.group_id = c.group_id " +
+		"WHERE " + strings.Join(conditions, " AND ") + " " +
+		"ORDER BY t.transaction_date DESC, t.name"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying list report: %w", err)
+	}
+	defer rows.Close()
+
+	transactions := make([]data.Transaction, 0)
+	for rows.Next() {
+		var transaction data.Transaction
+		var categoryId sql.NullString
+		if err := rows.Scan(&transaction.Id, &transaction.Name, &transaction.Date, &transaction.Amount, &transaction.AccountId, &categoryId); err != nil {
+			return nil, fmt.Errorf("scanning list report transaction: %w", err)
+		}
+
+		if categoryId.Valid {
+			transaction.CategoryId = &categoryId.String
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading list report: %w", err)
 	}
 
 	return transactions, nil
