@@ -683,6 +683,53 @@ func (s *Server) GetMonthGroupTransactions(ctx context.Context, from data.Date, 
 	return transactions, nil
 }
 
+// GetMonthCategoryTransactions returns the transactions dated from (inclusive) to to (exclusive).
+// When categoryId is empty, only transactions without a category are returned; otherwise only
+// transactions whose category is categoryId.
+func (s *Server) GetMonthCategoryTransactions(ctx context.Context, from data.Date, to data.Date, categoryId string) ([]data.Transaction, error) {
+	conditions := []string{"t.transaction_date >= ?", "t.transaction_date < ?"}
+	args := []any{from, to}
+
+	if categoryId == "" {
+		conditions = append(conditions, "t.category_id IS NULL")
+	} else {
+		conditions = append(conditions, "t.category_id = ?")
+		args = append(args, categoryId)
+	}
+
+	query := "SELECT t.transaction_id, t.name, t.transaction_date, t.amount, t.account_id, t.category_id " +
+		"FROM `transaction` t " +
+		"WHERE " + strings.Join(conditions, " AND ") + " " +
+		"ORDER BY t.transaction_date DESC, t.name"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying month category transactions: %w", err)
+	}
+	defer rows.Close()
+
+	transactions := make([]data.Transaction, 0)
+	for rows.Next() {
+		var transaction data.Transaction
+		var categoryId sql.NullString
+		if err := rows.Scan(&transaction.Id, &transaction.Name, &transaction.Date, &transaction.Amount, &transaction.AccountId, &categoryId); err != nil {
+			return nil, fmt.Errorf("scanning month category transaction: %w", err)
+		}
+
+		if categoryId.Valid {
+			transaction.CategoryId = &categoryId.String
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading month category transactions: %w", err)
+	}
+
+	return transactions, nil
+}
+
 // GetSessionByToken returns nil, nil when no session has the given token.
 func (s *Server) GetSessionByToken(ctx context.Context, token string) (*data.Session, error) {
 	var session data.Session
