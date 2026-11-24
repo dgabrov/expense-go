@@ -636,6 +636,53 @@ func (s *Server) ListTransactions(ctx context.Context, from data.Date, to *data.
 	return transactions, nil
 }
 
+// GetMonthGroupTransactions returns the transactions dated from (inclusive) to to (exclusive).
+// When groupId is empty, only transactions without a category are returned; otherwise only
+// transactions whose category belongs to the group groupId.
+func (s *Server) GetMonthGroupTransactions(ctx context.Context, from data.Date, to data.Date, groupId string) ([]data.Transaction, error) {
+	conditions := []string{"t.transaction_date >= ?", "t.transaction_date < ?"}
+	args := []any{from, to}
+
+	if groupId == "" {
+		conditions = append(conditions, "t.category_id IS NULL")
+	} else {
+		conditions = append(conditions, "t.category_id IN (SELECT c.category_id FROM expense_category c WHERE c.group_id = ?)")
+		args = append(args, groupId)
+	}
+
+	query := "SELECT t.transaction_id, t.name, t.transaction_date, t.amount, t.account_id, t.category_id " +
+		"FROM `transaction` t " +
+		"WHERE " + strings.Join(conditions, " AND ") + " " +
+		"ORDER BY t.transaction_date DESC, t.name"
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("querying month group transactions: %w", err)
+	}
+	defer rows.Close()
+
+	transactions := make([]data.Transaction, 0)
+	for rows.Next() {
+		var transaction data.Transaction
+		var categoryId sql.NullString
+		if err := rows.Scan(&transaction.Id, &transaction.Name, &transaction.Date, &transaction.Amount, &transaction.AccountId, &categoryId); err != nil {
+			return nil, fmt.Errorf("scanning month group transaction: %w", err)
+		}
+
+		if categoryId.Valid {
+			transaction.CategoryId = &categoryId.String
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("reading month group transactions: %w", err)
+	}
+
+	return transactions, nil
+}
+
 // GetSessionByToken returns nil, nil when no session has the given token.
 func (s *Server) GetSessionByToken(ctx context.Context, token string) (*data.Session, error) {
 	var session data.Session

@@ -47,6 +47,7 @@ func newHandler(db *sql.DB, cfg data.ConfigData) http.Handler {
 	mux.Handle("POST "+context+"/report/group", controller.NewReportGroup(srv, cfg))
 	mux.Handle("POST "+context+"/report/category", controller.NewReportCategory(srv, cfg))
 	mux.Handle("POST "+context+"/report/list", controller.NewReportList(srv, cfg))
+	mux.Handle("GET "+context+"/month/group", controller.NewGetMonthGroup(srv, cfg))
 
 	if cfg.Server.LogRequests {
 		return logRequests(mux)
