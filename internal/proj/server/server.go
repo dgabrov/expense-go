@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dgabrov/expense-go/internal/data"
+	"github.com/go-sql-driver/mysql"
 )
 
 type Server struct {
@@ -125,6 +126,31 @@ func (s *Server) UpdateTransaction(ctx context.Context, transaction data.Transac
 
 	return checkUpdated(result, "transaction", transaction.Id)
 }
+
+// SetTransactionCategory sets the category of one transaction. An empty categoryId clears it.
+// A categoryId that does not exist fails on the foreign key; a missing transaction fails as not found.
+func (s *Server) SetTransactionCategory(ctx context.Context, transactionId string, categoryId string) error {
+	var category sql.NullString
+	if categoryId != "" {
+		category = sql.NullString{String: categoryId, Valid: true}
+	}
+
+	result, err := s.db.ExecContext(ctx,
+		"UPDATE `transaction` SET category_id = ? WHERE transaction_id = ?",
+		category, transactionId)
+	if err != nil {
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlErrNoReferencedRow {
+			return fmt.Errorf("category %s does not exist", categoryId)
+		}
+		return fmt.Errorf("setting transaction category: %w", err)
+	}
+
+	return checkUpdated(result, "transaction", transactionId)
+}
+
+// mysqlErrNoReferencedRow is MySQL error 1452: a foreign key references a missing row.
+const mysqlErrNoReferencedRow = 1452
 
 // checkUpdated returns an error when an UPDATE matched no row for the given id.
 func checkUpdated(result sql.Result, entity string, id string) error {

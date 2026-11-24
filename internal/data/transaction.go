@@ -17,3 +17,9 @@ type SearchData struct {
 	AmountFrom    *float64 `json:"amountFrom"`
 	AmountTo      *float64 `json:"amountTo"`
 }
+
+// SetCategoryData is the payload of PUT /setCategory. An empty CategoryId clears the category.
+type SetCategoryData struct {
+	TransactionId string `json:"transactionId"`
+	CategoryId    string `json:"categoryId"`
+}
