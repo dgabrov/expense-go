@@ -23,20 +23,19 @@ I need a python script that provides migration as follows:
 - there are two possibilities, the category_cd contains : (colon) or not
 
 if contains colon
-    left of colon is the group, right of colon is category
-    insert once into expense_group table,  group_id and group_name same value
-    insert in expense_category group_id as presented above, category_id and category_name same value
-    category_id and category_name take the FULL category_cd (e.g. "services:insurance"), NOT only the part right of the colon
-    (reason: category_id is the primary key and the right-hand parts collide, e.g. services:insurance / shelter:insurance / transportation:insurance all end in "insurance")
+    example
+    group1:category1 
+    - one time only for that group1, you insert in expense_group entry with group_id group1 and group_name Group1
+    in expense_category you insert as follows:
+    group_id group1
+    category_id group1:category1
+    category_name Category1
 
-    example: services:insurance -> expense_group (group_id='services', group_name='services'); expense_category (category_id='services:insurance', group_id='services', category_name='services:insurance')
-
-    attention, group shall be inserted only once, of course
+    better I gave sample rather than wasting time with generic description
 else 
-    insert into expense_group the value in both group_id and group_name
-    then insert same values for all three fields in one expense_category entry
-
-    example: none is both group and category and means transaction is not considered for statistics; very well, you create entry in expense_group with both group_id and group_name with value 'none' and one entry in expense_category with all three fields with value 'none', one for group_id and then two values for category_id and category_name
+    example: none
+    enter in expense_group group_id none and group_name None
+    enter in category categoryId none, group_id none and category_name None
 end if
 
 python script you create: same folder, and you hardcode everything as it will be a throwaway
