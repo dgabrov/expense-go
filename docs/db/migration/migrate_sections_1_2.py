@@ -1,13 +1,23 @@
 """
 Throwaway migration: olddata -> expense (spec_data.md, sections 1 and 2).
 
-  Section 1: accounts       (distinct transaction.account_id -> expense.account)
-  Section 2: groups/cats    (olddata.category -> expense.expense_group / expense_category)
+  Section 1: accounts               (distinct transaction.account_id -> expense.account)
+  Section 2: groups and categories  (olddata.category.category_cd -> expense.expense_group / expense_category)
+
+Section 2 rules:
+  "group1:category1" -> expense_group    (group_id='group1', group_name='Group1')        once per group
+                        expense_category (category_id='group1:category1', group_id='group1',
+                                          category_name='Category1')
+  "donations"        -> expense_group    (group_id='none', group_name='None')            once
+                        expense_category (category_id='donations', group_id='none',
+                                          category_name='Donations')
+  NULL / blank category_cd is skipped.
 
 Requires: pip install pymysql
+Run this BEFORE migrate_transactions.py (transaction rows reference account and expense_category).
 
-Everything runs in ONE transaction on the new database: any error rolls back
-all inserts. Re-running after a successful run fails on duplicate keys by design.
+Everything runs in ONE transaction on the new database: any error rolls back all inserts.
+Re-running on a database that already has these rows fails on duplicate keys by design.
 """
 
 import pymysql
@@ -18,6 +28,9 @@ USER = "expense"
 PASSWORD = "expense"
 OLD_DB = "olddata"
 NEW_DB = "expense"
+
+NO_GROUP_ID = "none"
+NO_GROUP_NAME = "None"
 
 
 def connect(database):
@@ -30,6 +43,11 @@ def connect(database):
         charset="utf8mb4",
         autocommit=False,
     )
+
+
+def capitalize_first(text):
+    # 'group1' -> 'Group1', 'personalcare' -> 'Personalcare'. Rest of the text is kept as-is.
+    return text[:1].upper() + text[1:]
 
 
 def migrate_accounts(old, new):
@@ -56,18 +74,27 @@ def migrate_accounts(old, new):
     return len(rows)
 
 
+def build_groups_categories(codes):
+    # Pure transformation, no database access.
+    # Returns:
+    #   groups     : dict group_id -> group_name (each group inserted once)
+    #   categories : list of (category_id, group_id, category_name)
+    groups = {}
+    categories = []
+    for code in codes:
+        if ":" in code:
+            group_id, sub = code.split(":", 1)
+            groups.setdefault(group_id, capitalize_first(group_id))
+            categories.append((code, group_id, capitalize_first(sub)))
+        else:
+            groups.setdefault(NO_GROUP_ID, NO_GROUP_NAME)
+            categories.append((code, NO_GROUP_ID, capitalize_first(code)))
+    return groups, categories
+
+
 def migrate_groups_categories(old, new):
     # Section 2: groups and categories, driven by olddata.category.category_cd.
     # NULL or blank rows are skipped.
-    #
-    # With colon, e.g. "services:insurance":
-    #   expense_group    (group_id='services', group_name='services')          - inserted once per group
-    #   expense_category (category_id='services:insurance', group_id='services',
-    #                     category_name='services:insurance')
-    # category_id/category_name take the FULL category_cd, not the part after the colon,
-    # because category_id is the primary key and the right-hand parts collide
-    # (services:insurance / shelter:insurance / transportation:insurance).
-    # Without colon, e.g. 'none': group and category are all 'none'.
     with old.cursor() as cur:
         cur.execute("SELECT category_cd FROM category")
         codes = [
@@ -76,15 +103,7 @@ def migrate_groups_categories(old, new):
             if row[0] is not None and row[0].strip()
         ]
 
-    groups = {}          # group_id -> group_name (inserted once each)
-    categories = []      # (category_id, group_id, category_name)
-    for code in codes:
-        if ":" in code:
-            group = code.split(":", 1)[0]
-        else:
-            group = code  # no colon: group and category are both the whole value
-        groups.setdefault(group, group)
-        categories.append((code, group, code))
+    groups, categories = build_groups_categories(codes)
 
     with new.cursor() as cur:
         cur.executemany(
